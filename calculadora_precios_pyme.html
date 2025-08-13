@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Precio para PYMEs - ClinicalBike</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background: #111;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  .container {
+    background: #222;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
+    max-width: 650px;
+    width: 100%;
+  }
+  h1 {
+    color: #f00;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin: 1rem 0 0.25rem;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 1rem;
+    background: #333;
+    color: #fff;
+  }
+  table {
+    width: 100%;
+    margin-top: 2rem;
+    border-collapse: collapse;
+    background: #1a1a1a;
+  }
+  th, td {
+    border: 1px solid #444;
+    padding: 10px;
+    text-align: center;
+  }
+  th {
+    background-color: #333;
+    color: #f00;
+  }
+  td {
+    color: #eee;
+  }
+  .final-label {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: #0f0;
+    font-weight: bold;
+  }
+  .envio-gratis {
+    text-align: center;
+    font-size: 1rem;
+    color: #ff0;
+    margin-top: 10px;
+  }
+  .alerta-perdida {
+    text-align: center;
+    font-size: 1rem;
+    color: #ff4444;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calculadora de Precio</h1>
+
+  <label for="bruto">Costo con IVA ($):</label>
+  <input type="number" id="bruto" placeholder="Ej: 214641" oninput="calcularNetoDesdeBruto()">
+
+  <label for="costo">Costo neto del producto ($):</label>
+  <input type="number" id="costo" placeholder="Ej: 180371" oninput="calcular()">
+
+  <label for="envio">Costo de envío a tu local ($):</label>
+  <input type="number" id="envio" placeholder="Ej: 4000" oninput="calcular()">
+
+  <label for="envioCliente">Costo de envío al cliente ($):</label>
+  <input type="number" id="envioCliente" placeholder="Ej: 5000" oninput="calcular()">
+
+  <label for="margen">Margen deseado (%):</label>
+  <input type="number" id="margen" value="30" min="0" max="200" step="1" oninput="calcular()">
+
+  <label for="comision">Comisión medios de pago (%):</label>
+  <input type="number" id="comision" value="3" min="0" max="10" step="0.1" oninput="calcular()">
+
+  <div class="final-label" id="mensajeFinal" style="display:none;">
+    Este es el monto final a cobrar al cliente (incluye IVA y tu margen)
+  </div>
+  <div class="envio-gratis" id="mensajeEnvio" style="display:none;"></div>
+  <div class="alerta-perdida" id="alertaPerdida" style="display:none;"></div>
+
+  <table id="resultados" style="display:none;">
+    <thead>
+      <tr>
+        <th>Margen</th>
+        <th>Precio Neto</th>
+        <th>Precio Final (IVA 19%)</th>
+        <th>Comisión</th>
+        <th>Ganancia Real</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="resMargen"></td>
+        <td id="precioNeto"></td>
+        <td id="precioFinal"></td>
+        <td id="comisionValor"></td>
+        <td id="gananciaReal"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function formatCLP(valor) {
+  const partes = valor.toFixed(0).split('.');
+  partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return '$' + partes.join(',');
+}
+
+function calcularNetoDesdeBruto() {
+  const bruto = parseFloat(document.getElementById('bruto').value);
+  if (!isNaN(bruto)) {
+    const neto = bruto / 1.19;
+    document.getElementById('costo').value = neto.toFixed(0);
+    calcular();
+  }
+}
+
+function calcular() {
+  const costo = parseFloat(document.getElementById('costo').value);
+  const envio = parseFloat(document.getElementById('envio').value);
+  const envioCliente = parseFloat(document.getElementById('envioCliente').value);
+  const margen = parseFloat(document.getElementById('margen').value) / 100;
+  const comision = parseFloat(document.getElementById('comision').value) / 100;
+
+  if (isNaN(costo) || isNaN(envio)) {
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('mensajeFinal').style.display = 'none';
+    document.getElementById('mensajeEnvio').style.display = 'none';
+    document.getElementById('alertaPerdida').style.display = 'none';
+    return;
+  }
+
+  const totalCosto = costo + envio;
+  const precioNeto = totalCosto * (1 + margen);
+  const precioFinal = precioNeto * 1.19;
+  const costoComision = precioFinal * comision;
+  const ganancia = precioNeto - totalCosto - costoComision / 1.19;
+
+  document.getElementById('resMargen').textContent = (margen * 100).toFixed(1) + '%';
+  document.getElementById('precioNeto').textContent = formatCLP(precioNeto);
+  document.getElementById('precioFinal').textContent = formatCLP(precioFinal);
+  document.getElementById('comisionValor').textContent = formatCLP(costoComision);
+  document.getElementById('gananciaReal').textContent = formatCLP(ganancia);
+
+  document.getElementById('resultados').style.display = 'table';
+  document.getElementById('mensajeFinal').style.display = 'block';
+
+  // Aviso de pérdida o baja ganancia
+  if (ganancia <= 0) {
+    document.getElementById('alertaPerdida').style.display = 'block';
+    document.getElementById('alertaPerdida').textContent = '🚨 ATENCIÓN: Este precio genera pérdida. Ajusta el margen o el precio.';
+  } else if (ganancia > 0 && ganancia < (totalCosto * 0.1)) {
+    document.getElementById('alertaPerdida').style.display = 'block';
+    document.getElementById('alertaPerdida').textContent = '⚠ Advertencia: La ganancia es muy baja (<10% del costo).';
+  } else {
+    document.getElementById('alertaPerdida').style.display = 'none';
+  }
+
+  if (!isNaN(envioCliente) && envioCliente > 0) {
+    const precioMinimoParaEnvioGratis = (totalCosto + envioCliente) * (1 + margen) * 1.19;
+    document.getElementById('mensajeEnvio').style.display = 'block';
+    document.getElementById('mensajeEnvio').textContent = '✅ Puedes ofrecer envío gratis al cliente si el pedido supera: ' + formatCLP(precioMinimoParaEnvioGratis);
+  } else {
+    document.getElementById('mensajeEnvio').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
